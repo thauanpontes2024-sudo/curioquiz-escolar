@@ -1,0 +1,179 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CurioQuiz Escolar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      color: #fff;
+    }
+    header {
+      padding: 20px;
+      text-align: center;
+      background: rgba(0,0,0,0.3);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+    }
+    main {
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+    .card h2 {
+      margin-top: 0;
+    }
+    input, select, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin: 5px 0;
+      font-size: 1em;
+    }
+    button {
+      cursor: pointer;
+      background: #00c6ff;
+      color: #000;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #00e5ff;
+    }
+    .options button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      background: #fff;
+      color: #000;
+    }
+    .hidden {
+      display: none;
+    }
+    .scoreboard li {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body><header>
+  <h1>🧠 CurioQuiz Escolar</h1>
+  <p>Teste seus conhecimentos e dispute o placar!</p>
+</header><main>
+  <!-- LOGIN -->
+  <div class="card" id="login">
+    <h2>Entrar no Quiz</h2>
+    <input type="text" id="playerName" placeholder="Seu nome">
+    <select id="level">
+      <option value="easy">Nível Fácil</option>
+      <option value="medium">Nível Médio</option>
+      <option value="hard">Nível Difícil</option>
+    </select>
+    <button onclick="startGame()">Começar</button>
+  </div>  <!-- QUIZ -->  <div class="card hidden" id="quiz">
+    <h2 id="question"></h2>
+    <div class="options" id="options"></div>
+    <p>Pontuação: <span id="score">0</span></p>
+  </div>  <!-- SCOREBOARD -->  <div class="card" id="ranking">
+    <h2>🏆 Placar Global</h2>
+    <ul class="scoreboard" id="scoreboard"></ul>
+  </div>
+</main><script>
+  const questions = {
+    easy: [
+      { q: "Quanto é 5 x 6?", a: ["30", "25", "35", "20"], c: 0 },
+      { q: "Qual é o planeta mais próximo do Sol?", a: ["Vênus", "Terra", "Mercúrio", "Marte"], c: 2 },
+      { q: "Quantas vogais existem no alfabeto?", a: ["4", "5", "6", "7"], c: 1 }
+    ],
+    medium: [
+      { q: "Quem descobriu o Brasil?", a: ["Dom Pedro I", "Pedro Álvares Cabral", "Cristóvão Colombo", "Tiradentes"], c: 1 },
+      { q: "Qual é a raiz quadrada de 144?", a: ["10", "11", "12", "13"], c: 2 },
+      { q: "Em que continente fica o Egito?", a: ["Europa", "Ásia", "África", "América"], c: 2 }
+    ],
+    hard: [
+      { q: "Qual é a fórmula da água?", a: ["CO2", "H2O", "O2", "H2O2"], c: 1 },
+      { q: "Quem escreveu Dom Casmurro?", a: ["José de Alencar", "Machado de Assis", "Clarice Lispector", "Carlos Drummond"], c: 1 },
+      { q: "Quanto é 9² + 7²?", a: ["130", "150", "162", "170"], c: 2 }
+    ]
+  };
+
+  let current = 0;
+  let score = 0;
+  let level = "easy";
+  let player = "";
+
+  function startGame() {
+    player = document.getElementById("playerName").value || "Jogador";
+    level = document.getElementById("level").value;
+    current = 0;
+    score = 0;
+    document.getElementById("score").innerText = score;
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("quiz").classList.remove("hidden");
+    loadQuestion();
+  }
+
+  function loadQuestion() {
+    if (current >= questions[level].length) {
+      endGame();
+      return;
+    }
+    const q = questions[level][current];
+    document.getElementById("question").innerText = q.q;
+    const optionsDiv = document.getElementById("options");
+    optionsDiv.innerHTML = "";
+    q.a.forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.innerText = opt;
+      btn.onclick = () => checkAnswer(i);
+      optionsDiv.appendChild(btn);
+    });
+  }
+
+  function checkAnswer(i) {
+    if (i === questions[level][current].c) {
+      score += 10;
+      document.getElementById("score").innerText = score;
+    }
+    current++;
+    loadQuestion();
+  }
+
+  function endGame() {
+    saveScore();
+    document.getElementById("quiz").classList.add("hidden");
+    document.getElementById("login").classList.remove("hidden");
+    updateScoreboard();
+    alert(player + " terminou com " + score + " pontos!");
+  }
+
+  function saveScore() {
+    const data = JSON.parse(localStorage.getItem("scoreboard") || "[]");
+    data.push({ name: player, score: score, level: level });
+    data.sort((a, b) => b.score - a.score);
+    localStorage.setItem("scoreboard", JSON.stringify(data.slice(0, 10)));
+  }
+
+  function updateScoreboard() {
+    const list = document.getElementById("scoreboard");
+    list.innerHTML = "";
+    const data = JSON.parse(localStorage.getItem("scoreboard") || "[]");
+    data.forEach(p => {
+      const li = document.createElement("li");
+      li.innerText = `${p.name} – ${p.score} pts (${p.level})`;
+      list.appendChild(li);
+    });
+  }
+
+  updateScoreboard();
+</script></body>
+</html>
